@@ -7,6 +7,10 @@ local ObbyConfig = require(Shared.Configs.ObbyConfig)
 
 local KillBrickService = {}
 
+local function isDeathPart(name: string): boolean
+	return name == "DeathParts" or name == "DeathPart" or name == "KillBrick" or name == "Lava"
+end
+
 function KillBrickService.init()
 end
 
@@ -17,13 +21,13 @@ function KillBrickService.start()
 	end
 
 	Workspace.DescendantAdded:Connect(function(descendant)
-		if descendant:IsA("BasePart") and (descendant.Name == "KillBrick" or descendant.Name == "Lava") then
+		if descendant:IsA("BasePart") and isDeathPart(descendant.Name) then
 			KillBrickService.bindKillBrick(descendant)
 		end
 	end)
 
 	for _, descendant in ipairs(Workspace:GetDescendants()) do
-		if descendant:IsA("BasePart") and (descendant.Name == "KillBrick" or descendant.Name == "Lava") then
+		if descendant:IsA("BasePart") and isDeathPart(descendant.Name) then
 			KillBrickService.bindKillBrick(descendant)
 		end
 	end
