@@ -1,3 +1,4 @@
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -29,8 +30,28 @@ function CheckpointService.init()
 end
 
 function CheckpointService.start()
+	MarketplaceService.ProcessReceipt = function(receiptInfo)
+		local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
+		if not player then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		local devProdId = ObbyConfig.SkipStageDevProductId
+		if devProdId and devProdId > 0 and receiptInfo.ProductId == devProdId then
+			CheckpointService.skipStage(player, true)
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
 	skipStageEvent.OnServerEvent:Connect(function(player: Player)
-		CheckpointService.skipStage(player)
+		local devProdId = ObbyConfig.SkipStageDevProductId
+		if devProdId and devProdId > 0 then
+			warn(`Player {player.Name} attempted direct remote skip event without Dev Product purchase`)
+			return
+		end
+		CheckpointService.skipStage(player, true)
 	end)
 
 	Players.PlayerAdded:Connect(function(player)
@@ -51,7 +72,9 @@ function CheckpointService.start()
 	end
 end
 
-function CheckpointService.skipStage(player: Player)
+function CheckpointService.skipStage(player: Player, isVerified: boolean?)
+	if not isVerified then return end
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then return end
 
@@ -92,6 +115,15 @@ function CheckpointService.setupLevelFolder(levelFolder: Instance)
 			local character = hit.Parent
 			local player = Players:GetPlayerFromCharacter(character)
 			if not player then return end
+
+			local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if not hrp then return end
+
+			local maxDist = ObbyConfig.MaxCheckpointTouchDistance or 35
+			if (hrp.Position - part.Position).Magnitude > maxDist then
+				warn(`Player {player.Name} invalid distance touch:`, (hrp.Position - part.Position).Magnitude)
+				return
+			end
 
 			local now = os.clock()
 			if lastTouchTime[player] and (now - lastTouchTime[player]) < ObbyConfig.CheckpointCoolDown then
@@ -185,7 +217,7 @@ function CheckpointService.onCharacterAdded(player: Player, character: Model)
 	humanoid.Touched:Connect(function(hit)
 		if hit:IsA("Terrain") and humanoid:GetState() == Enum.HumanoidStateType.Swimming then
 			resetToStage()
-		elseif hit.Name == "Water" or hit.Name == "WaterPart" or hit.Name == "Ocean" then
+		elseif hit.Name == "Water" or hit.Name == "WaterPart" or hit.Name == "Ocean" or hit.Name == "Floor1" or string.find(string.lower(hit.Name), "floor1") then
 			resetToStage()
 		end
 	end)

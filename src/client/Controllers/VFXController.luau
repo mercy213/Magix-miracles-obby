@@ -6,10 +6,10 @@ local Networker = require(Packages:WaitForChild("networker"))
 
 local VFXController = {}
 local localPlayer = Players.LocalPlayer
-local networkerClient
+local _networkerClient
 
 function VFXController.init()
-	networkerClient = Networker.client.new("VFXNetwork", VFXController)
+	_networkerClient = Networker.client.new("VFXNetwork", VFXController)
 end
 
 function VFXController.start()

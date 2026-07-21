@@ -2,17 +2,29 @@ local BadgeService = game:GetService("BadgeService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local TeleportService = game:GetService("TeleportService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ObbyConfig = require(Shared.Configs.ObbyConfig)
 
 local BadgeServer = {}
 local awardedCache = {}
+local teleportEvent: RemoteEvent
 
 function BadgeServer.init()
+	teleportEvent = ReplicatedStorage:FindFirstChild("TeleportToMainEvent") :: RemoteEvent
+	if not teleportEvent then
+		teleportEvent = Instance.new("RemoteEvent")
+		teleportEvent.Name = "TeleportToMainEvent"
+		teleportEvent.Parent = ReplicatedStorage
+	end
 end
 
 function BadgeServer.start()
+	teleportEvent.OnServerEvent:Connect(function(player: Player)
+		BadgeServer.teleportToMainGame(player)
+	end)
+
 	local function checkStageBadges(player: Player, stage: number)
 		if stage >= 15 then
 			BadgeServer.awardBadge(player, ObbyConfig.Level15BadgeId)
@@ -54,6 +66,11 @@ function BadgeServer.start()
 
 			prompt.Triggered:Connect(function(player: Player)
 				BadgeServer.awardBadge(player, ObbyConfig.CompletionBadgeId)
+				task.delay(2.5, function()
+					if player and player.Parent then
+						BadgeServer.teleportToMainGame(player)
+					end
+				end)
 			end)
 		end
 
@@ -82,6 +99,29 @@ function BadgeServer.start()
 			end
 		end)
 	end)
+end
+
+local lastTeleportTime = {}
+
+function BadgeServer.teleportToMainGame(player: Player)
+	if not player or not player.Parent then return end
+
+	local now = os.clock()
+	if lastTeleportTime[player] and (now - lastTeleportTime[player]) < 2.0 then
+		return
+	end
+	lastTeleportTime[player] = now
+
+	local placeId = ObbyConfig.MainGamePlaceId
+	if not placeId or placeId == 0 then return end
+
+	print(`Attempting to teleport player {player.Name} to place {placeId}`)
+	local success, err = pcall(function()
+		TeleportService:TeleportAsync(placeId, { player })
+	end)
+	if not success then
+		warn(`Teleport failed for {player.Name}:`, err)
+	end
 end
 
 function BadgeServer.awardBadge(player: Player, badgeId: number)
