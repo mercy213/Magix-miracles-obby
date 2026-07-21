@@ -1,7 +1,7 @@
 local ObbyConfig = {
 	ObbyFolderName = "Obby", -- obby folder
 	CheckpointName = "CheckPoint", -- checkpoint name
-	DefaultStage = 1, -- default stage 
+	DefaultStage = 0, -- default stage <change to 0 and add level 0 in campfire u get me and checkpoint there <edit> i already added this deleted level 0 folder and make this into 1 
 	KillBrickTag = "KillBrick", -- instead having death part make any part properties add tag and call iit this tag // DeathPart still work
 	CheckpointCoolDown = 0.5, 
 	Level15BadgeId = 1623073761035482, -- badge
