@@ -5,9 +5,13 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ObbyConfig = require(Shared.Configs.ObbyConfig)
 
+local Packages = ReplicatedStorage:WaitForChild("Packages")
+local Networker = require(Packages:WaitForChild("networker"))
+
 local CheckpointService = {}
 local lastTouchTime = {}
 local skipStageEvent: RemoteEvent
+local vfxNetworker: any
 
 local function getObbyFolder(): Instance?
 	return Workspace:FindFirstChild(ObbyConfig.ObbyFolderName) or Workspace
@@ -20,6 +24,8 @@ function CheckpointService.init()
 		skipStageEvent.Name = "SkipStageEvent"
 		skipStageEvent.Parent = ReplicatedStorage
 	end
+
+	vfxNetworker = Networker.server.new("VFXNetwork")
 end
 
 function CheckpointService.start()
@@ -70,6 +76,9 @@ function CheckpointService.skipStage(player: Player)
 		local spawnPart = CheckpointService.getSpawnLocationForStage(stageStat.Value)
 		if hrp and spawnPart then
 			hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 3.5, 0)
+			if vfxNetworker then
+				vfxNetworker:fire(player, "playSpawnVFX")
+			end
 		end
 	end
 end
@@ -161,6 +170,9 @@ function CheckpointService.onCharacterAdded(player: Player, character: Model)
 		local currentSpawn = CheckpointService.getSpawnLocationForStage(stageStat.Value)
 		if currentSpawn and hrp.Parent then
 			hrp.CFrame = currentSpawn.CFrame + Vector3.new(0, 3.5, 0)
+			if vfxNetworker then
+				vfxNetworker:fire(player, "playSpawnVFX")
+			end
 		end
 	end
 
