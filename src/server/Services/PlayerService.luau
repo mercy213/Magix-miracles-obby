@@ -28,6 +28,11 @@ function PlayerService.onPlayerAdded(player: Player)
 	stageStat.Value = ObbyConfig.DefaultStage
 	stageStat.Parent = leaderstats
 
+	local attemptsStat = Instance.new("IntValue")
+	attemptsStat.Name = "Attempts"
+	attemptsStat.Value = 0
+	attemptsStat.Parent = leaderstats
+
 	leaderstats.Parent = player
 
 	stageCache[player] = stageStat.Value
@@ -35,6 +40,20 @@ function PlayerService.onPlayerAdded(player: Player)
 	stageStat.Changed:Connect(function(newValue)
 		stageCache[player] = newValue
 	end)
+
+	local function bindCharacter(character: Model)
+		local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
+		if humanoid then
+			humanoid.Died:Connect(function()
+				attemptsStat.Value += 1
+			end)
+		end
+	end
+
+	player.CharacterAdded:Connect(bindCharacter)
+	if player.Character then
+		task.spawn(bindCharacter, player.Character)
+	end
 end
 
 function PlayerService.onPlayerRemoving(player: Player)

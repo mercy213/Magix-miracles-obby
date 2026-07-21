@@ -199,6 +199,11 @@ function CheckpointService.onCharacterAdded(player: Player, character: Model)
 		end
 		lastTouchTime[player] = now
 
+		local attemptsStat = leaderstats:FindFirstChild("Attempts") or leaderstats:FindFirstChild("Attempt")
+		if attemptsStat and attemptsStat:IsA("IntValue") then
+			(attemptsStat :: IntValue).Value += 1
+		end
+
 		local currentSpawn = CheckpointService.getSpawnLocationForStage(stageStat.Value)
 		if currentSpawn and hrp.Parent then
 			hrp.CFrame = currentSpawn.CFrame + Vector3.new(0, 3.5, 0)
