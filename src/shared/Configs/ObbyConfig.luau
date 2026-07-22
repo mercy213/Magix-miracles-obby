@@ -8,6 +8,7 @@ local ObbyConfig = {
 	CompletionBadgeId = 3158809878982794, --badge
 	MainGamePlaceId = 82614076557684, -- main game id
 	SkipStageDevProductId = 0, -- make this the dev product id 
+	ContinueDevProductId = 0, -- make this the dec product id 
 	PremiumDanceGamepassId = 1234544490, -- dance id from main game
 
 	-- anti cheat

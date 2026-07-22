@@ -42,6 +42,13 @@ function CheckpointService.start()
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 
+		local continueDevProdId = ObbyConfig.ContinueDevProductId
+		if continueDevProdId and continueDevProdId > 0 and receiptInfo.ProductId == continueDevProdId then
+			local PlayerService = require(script.Parent.PlayerService)
+			PlayerService.confirmContinue(player)
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 

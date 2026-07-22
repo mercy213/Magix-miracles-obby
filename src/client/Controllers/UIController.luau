@@ -9,6 +9,115 @@ function UIController.init()
 end
 
 function UIController.start()
+	local restartEvent = ReplicatedStorage:WaitForChild("RestartMenuEvent", 10) :: RemoteEvent?
+	local isRestartMenuPrompted = false
+
+	local function showRestartMenu()
+		isRestartMenuPrompted = true
+		local restartMenu = playerGui:FindFirstChild("RestartMenu", true)
+		if restartMenu and restartMenu:IsA("GuiObject") then
+			local current: Instance? = restartMenu
+			while current and current:IsA("GuiObject") do
+				(current :: GuiObject).Visible = true
+				current = current.Parent
+			end
+		end
+	end
+
+	local function hideRestartMenu()
+		isRestartMenuPrompted = false
+		local restartMenu = playerGui:FindFirstChild("RestartMenu", true)
+		if restartMenu and restartMenu:IsA("GuiObject") then
+			(restartMenu :: GuiObject).Visible = false
+		end
+	end
+
+	local boundRestartMenu = false
+	local function bindRestartMenu()
+		if boundRestartMenu then return end
+
+		local restartMenu = playerGui:FindFirstChild("RestartMenu", true)
+		if not restartMenu or not restartMenu:IsA("GuiObject") then return end
+
+		boundRestartMenu = true
+		if not isRestartMenuPrompted then
+			(restartMenu :: GuiObject).Visible = false
+		end
+
+		local function bindGuiClick(guiObj: GuiObject, callback: () -> ())
+			guiObj.Active = true
+			if guiObj:IsA("GuiButton") then
+				(guiObj :: GuiButton).MouseButton1Click:Connect(callback)
+			else
+				guiObj.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						callback()
+					end
+				end)
+			end
+
+			for _, child in ipairs(guiObj:GetDescendants()) do
+				if child:IsA("GuiObject") then
+					local childGui = child :: GuiObject
+					childGui.Active = true
+					if childGui:IsA("GuiButton") then
+						(childGui :: GuiButton).MouseButton1Click:Connect(callback)
+					else
+						childGui.InputBegan:Connect(function(input)
+							if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+								callback()
+							end
+						end)
+					end
+				end
+			end
+		end
+
+		local restartBtn = restartMenu:FindFirstChild("Restart", true)
+		if restartBtn and restartBtn:IsA("GuiObject") then
+			bindGuiClick(restartBtn :: GuiObject, function()
+				local rEvent = ReplicatedStorage:FindFirstChild("RestartMenuEvent") :: RemoteEvent?
+				if rEvent then
+					rEvent:FireServer("Restart")
+				end
+				hideRestartMenu()
+			end)
+		end
+
+		local continueBtn = restartMenu:FindFirstChild("Continue", true)
+		if continueBtn and continueBtn:IsA("GuiObject") then
+			bindGuiClick(continueBtn :: GuiObject, function()
+				local Shared = ReplicatedStorage:WaitForChild("Shared")
+				local ObbyConfig = require(Shared.Configs.ObbyConfig)
+				local MarketplaceService = game:GetService("MarketplaceService")
+
+				local devProdId = ObbyConfig.ContinueDevProductId
+				if devProdId and devProdId > 0 then
+					MarketplaceService:PromptProductPurchase(localPlayer, devProdId)
+				else
+					local rEvent = ReplicatedStorage:FindFirstChild("RestartMenuEvent") :: RemoteEvent?
+					if rEvent then
+						rEvent:FireServer("Continue")
+					end
+					hideRestartMenu()
+				end
+			end)
+		end
+	end
+
+	bindRestartMenu()
+
+	if restartEvent then
+		restartEvent.OnClientEvent:Connect(function(action: string)
+			if action == "PromptMenu" then
+				showRestartMenu()
+			elseif action == "CloseMenu" then
+				hideRestartMenu()
+			end
+		end)
+		restartEvent:FireServer("CheckPrompt")
+	end
+
 	local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
 	if not leaderstats then return end
 
@@ -205,6 +314,7 @@ function UIController.start()
 			bindSkipButton()
 			bindTeleportMenu()
 			bindPeopleButton()
+			bindRestartMenu()
 			updateText()
 			task.wait(0.5)
 		end
